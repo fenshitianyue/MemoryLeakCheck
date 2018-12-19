@@ -1,7 +1,7 @@
 #include <iostream>
 #include <cstring>
 
-#define __NEW_OVERLOAD__
+//#define __NEW_OVERLOAD__
 #include "MemLeaDet.hpp"
 
 
@@ -74,11 +74,11 @@ void* operator new[](size_t size){
 }
 
 void* operator new(size_t size, char* file_name, unsigned int line){
-  return AllocateMemory(size, false, nullptr, 0);
+  return AllocateMemory(size, false, file_name, line);
 }
 
 void* operator new[](size_t size, char* file_name, unsigned int line){
-  return AllocateMemory(size, true, nullptr, 0);
+  return AllocateMemory(size, true, file_name, line);
 }
 
 void operator delete(void* ptr) noexcept{
@@ -88,3 +88,27 @@ void operator delete(void* ptr) noexcept{
 void operator delete[](void* ptr) noexcept{
   DeleteMemory(ptr, true);
 }
+
+unsigned int leak_detector::_leak_detector() noexcept {
+  unsigned int count = 0;
+  MemoryList* ptr = root._next;
+  while(ptr && ptr != &root){
+    if(ptr->_isArray)
+      std::cout << "泄漏[] ";
+    else 
+      std::cout << "泄漏   ";
+    std::cout << ptr << " 大小 " << ptr->_size;
+    if(ptr->_file_name)
+      std::cout << "(位于 " << ptr->_file_name << " 第 " << ptr->_line << " 行)";
+    else 
+      std::cout << " (无文件信息)";
+    std::cout << std::endl;
+    ++count;
+    ptr = ptr->_next;
+  }
+  if(count){
+    std::cout << "存在" << count << "处内存泄漏，共包括" << memory_allocated << " bytes." << std::endl;
+  }
+  return count;
+}
+
